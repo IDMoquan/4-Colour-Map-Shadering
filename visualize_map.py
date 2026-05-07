@@ -7,7 +7,7 @@ import matplotlib.patches as mpatches
 from matplotlib.colors import ListedColormap
 from matplotlib.font_manager import FontProperties
 import numpy as np
-from four_color_solver import PROVINCES, ADJACENCY, COLORS, solve_four_color
+from four_color_solver import PROVINCES, ADJACENCY, COLORS, solve_four_color_with_history
 
 plt.rcParams['font.sans-serif'] = ['Arial Unicode MS', 'SimHei', 'DejaVu Sans']
 plt.rcParams['axes.unicode_minus'] = False
@@ -62,7 +62,7 @@ def visualize_china_map():
     gdf = gpd.GeoDataFrame.from_features(geojson_data['features'])
     gdf['标准名称'] = gdf['NAME'].apply(standardize_name)
 
-    solution = solve_four_color(PROVINCES, ADJACENCY, COLORS)
+    solution, _ = solve_four_color_with_history(PROVINCES, ADJACENCY, COLORS)
     if not solution:
         print("无法求解四色问题")
         return
