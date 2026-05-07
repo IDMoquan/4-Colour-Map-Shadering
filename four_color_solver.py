@@ -58,21 +58,100 @@ COLOR_GRAY = "#D3D3D3"
 
 def is_safe(province, color, assignment, adjacency):
     for neighbor in adjacency[province]:
-        if neighbor in assignment and assignment[neighbor] == color:
+        if neighbor in PROVINCES and neighbor in assignment and assignment[neighbor] == color:
             return False
     return True
 
 def solve_four_color_with_history(province_list, adjacency, colors):
     steps = []
+    conflict_set = {}
 
-    def backtrack(assignment):
+    def get_remaining_values(assignment):
+        remaining = {}
+        for province in province_list:
+            if province not in assignment:
+                available_colors = []
+                for color in colors:
+                    if is_safe(province, color, assignment, adjacency):
+                        available_colors.append(color)
+                remaining[province] = available_colors
+        return remaining
+
+    def select_variable_mrv(assignment):
+        remaining = get_remaining_values(assignment)
+        min_count = float('inf')
+        selected = None
+        
+        for province, available_colors in remaining.items():
+            if len(available_colors) < min_count:
+                min_count = len(available_colors)
+                selected = province
+            elif len(available_colors) == min_count:
+                if len(adjacency[province]) > len(adjacency[selected]):
+                    selected = province
+        
+        return selected
+
+    def select_variable_degree(assignment):
+        """度启发式：选择对其它变量约束数最大的变量"""
+        unassigned = [p for p in province_list if p not in assignment]
+        max_degree = -1
+        selected = None
+        
+        for province in unassigned:
+            degree = 0
+            for neighbor in adjacency[province]:
+                if neighbor not in assignment:
+                    degree += 1
+            
+            if degree > max_degree:
+                max_degree = degree
+                selected = province
+            elif degree == max_degree:
+                remaining = get_remaining_values(assignment)
+                if len(remaining[province]) < len(remaining[selected]):
+                    selected = province
+        
+        return selected
+
+    def order_domain_values(province, assignment):
+        """最少约束值启发式：选择对邻居变量可选值影响最少的颜色"""
+        remaining = get_remaining_values(assignment)
+        color_scores = []
+        
+        for color in colors:
+            if not is_safe(province, color, assignment, adjacency):
+                continue
+                
+            impact = 0
+            for neighbor in adjacency[province]:
+                if neighbor in province_list and neighbor not in assignment:
+                    neighbor_colors = remaining[neighbor]
+                    if color in neighbor_colors:
+                        impact += 1
+            
+            color_scores.append((color, impact))
+        
+        color_scores.sort(key=lambda x: x[1])
+        return [color for color, _ in color_scores]
+
+    def update_conflict_set(conflict_province, current_province):
+        """更新冲突集"""
+        if current_province not in conflict_set:
+            conflict_set[current_province] = set()
+        conflict_set[current_province].add(conflict_province)
+
+    def backtrack_with_cbj(assignment, level=0):
+        """带冲突导向后向跳转的回溯算法"""
         if len(assignment) == len(province_list):
             return dict(assignment)
 
-        unassigned = [p for p in province_list if p not in assignment]
-        province = unassigned[0]
-
-        for color in colors:
+        province = select_variable_mrv(assignment)
+        ordered_colors = order_domain_values(province, assignment)
+        
+        current_conflicts = set()
+        
+        for color in ordered_colors:
             if is_safe(province, color, assignment, adjacency):
                 assignment[province] = color
                 steps.append({
@@ -80,10 +159,10 @@ def solve_four_color_with_history(province_list, adjacency, colors):
                     "province": province,
                     "color": color,
                     "assignment": dict(assignment),
-                    "message": f"为 {province} 涂上 {color} 色"
+                    "message": f"为 {province} 涂上 {color} 色（使用优化启发式）"
                 })
 
-                result = backtrack(assignment)
+                result = backtrack_with_cbj(assignment, level + 1)
                 if result is not None:
                     return result
 
@@ -96,9 +175,24 @@ def solve_four_color_with_history(province_list, adjacency, colors):
                     "message": f"回溯：{province} 的 {color} 色方案失败，尝试其他颜色"
                 })
 
+                for conflict_province in current_conflicts:
+                    update_conflict_set(conflict_province, province)
+                current_conflicts.clear()
+            else:
+
+                for neighbor in adjacency[province]:
+                    if neighbor in assignment and assignment[neighbor] == color:
+                        current_conflicts.add(neighbor)
+
+        if current_conflicts:
+            latest_conflict = max(current_conflicts, 
+                                key=lambda p: list(assignment.keys()).index(p) if p in assignment else -1)
+            if latest_conflict in assignment:
+                return None 
+
         return None
 
-    result = backtrack({})
+    result = backtrack_with_cbj({})
     return result, steps
 
 def main():
