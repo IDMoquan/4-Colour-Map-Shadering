@@ -31,9 +31,9 @@
 
 ### 交互式可视化（推荐）
 
-```bash
+bash
 python visualize_animation.py
-```
+
 
 功能：
 - 点击「播放」按钮自动播放求解过程
@@ -44,7 +44,7 @@ python visualize_animation.py
 
 ### 静态地图
 
-```bash
+bash
 python visualize_map.py
 ```
 
