@@ -91,7 +91,7 @@ class InteractiveVisualizer:
             valinit=0,
             valfmt='%d'
         )
-        self.slider.valtext.set_text(f"0 / {self.total_steps - 1}")
+        self.slider.valtext.set_text(f"0 / {len(self.provinces)}")
         self.slider.on_changed(self._on_slider_change)
 
         btn_width = 0.065
@@ -192,23 +192,36 @@ class InteractiveVisualizer:
                                 ha='center', va='center', fontsize=7,
                                 color='#2C3E50', weight='bold')
 
-        legend_patches = [mpatches.Patch(color=c, label=n)
-                         for n, c in self.color_hex.items()]
+        legend_patches = []
+        if step_idx == self.total_steps - 1:
+            color_counts = {}
+            for province, color in current_assignment.items():
+                color_counts[color] = color_counts.get(color, 0) + 1
+            for name, color in self.color_hex.items():
+                count = color_counts.get(name, 0)
+                legend_patches.append(mpatches.Patch(color=color, label=f"{name} ({count}个)"))
+        else:
+            legend_patches = [mpatches.Patch(color=c, label=n)
+                             for n, c in self.color_hex.items()]
         legend_patches.append(mpatches.Patch(color=self.color_gray, label='待着色'))
         self.ax_map.legend(handles=legend_patches, loc='lower right', fontsize=10,
                          title='四色方案', title_fontsize=12, framealpha=0.9)
 
         colored_count = len(current_assignment)
-        self.status_text.set_text(f"步骤 {step_idx + 1}/{self.total_steps}\n"
-                                  f"已着色: {colored_count}/{len(self.provinces)}\n"
-                                  f"{step['message']}")
+        status_msg = f"已着色: {colored_count}/{len(self.provinces)}\n" \
+                     f"{step['message']}"
+        if step_idx == self.total_steps - 1:
+            total_colors_used = len(set(current_assignment.values()))
+            status_msg += f"\n共使用 {total_colors_used} 种颜色"
+        self.status_text.set_text(status_msg)
 
         self.fig.canvas.draw_idle()
 
     def _on_slider_change(self, val):
         self.current_step = int(val)
         self._draw_step(self.current_step)
-        self.slider.valtext.set_text(f"{self.current_step} / {self.total_steps - 1}")
+        colored_count = len(self.steps[self.current_step]['assignment'])
+        self.slider.valtext.set_text(f"{colored_count} / {len(self.provinces)}")
 
     def _on_prev(self, event):
         self.is_playing = False
@@ -266,8 +279,9 @@ class InteractiveVisualizer:
 
 def main():
     print("正在求解四色问题...")
-    result, steps = solve_four_color_with_history(PROVINCES, ADJACENCY, COLORS)
+    result, steps, coloring_order = solve_four_color_with_history(PROVINCES, ADJACENCY, COLORS)
     print(f"求解完成，共 {len(steps)} 步计算")
+    print(f"填色顺序：{' -> '.join([f'{p}({c})' for p, c in coloring_order])}")
 
     viz = InteractiveVisualizer(
         steps=steps,

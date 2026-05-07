@@ -10,7 +10,7 @@
 
 ```
 4-Colour-Map-Shadering/
-├── four_color_solver.py          # 四色问题求解器（含启发式优化）
+├── four_color_solver.py          # 四色问题求解器
 ├── visualize_interactive.py      # 交互式可视化窗口
 ├── visualize_animation.py        # 入口脚本
 ├── visualize_map.py            # 静态地图可视化
@@ -22,7 +22,7 @@
 
 | 文件 | 说明 |
 |------|------|
-| `four_color_solver.py` | 核心求解器，包含邻接关系建模、MRV/度启发式/LCV/CBJ 优化、步骤历史记录 |
+| `four_color_solver.py` | 核心求解器，包含邻接关系建模、回溯算法、步骤历史记录 |
 | `visualize_interactive.py` | 交互式可视化窗口，支持播放/暂停/步进/滑轨跳转 |
 | `visualize_animation.py` | 入口脚本 |
 | `visualize_map.py` | 生成静态地图图片 |
@@ -52,8 +52,6 @@ python visualize_map.py
 
 ## 算法说明
 
-### 基础回溯算法
-
 使用回溯算法（Backtracking）求解四色问题：
 
 1. 每次为未着色的省份尝试四种颜色
@@ -61,27 +59,7 @@ python visualize_map.py
 3. 如冲突则尝试下一种颜色
 4. 如四种颜色均失败则回溯到上一步
 
-### 启发式优化
-
-代码实现了多种启发式优化，显著提升求解效率：
-
-| 启发式 | 说明 |
-|--------|------|
-| **MRV（最少剩余值）** | 优先选择“可选颜色最少”的未着色省份，尽早暴露冲突 |
-| **Degree（度数启发式）** | MRV 打平时，选“未着色邻居最多”的省份，约束力最强 |
-| **LCV（最少约束值）** | 优先尝试对邻居未来可选颜色影响最小的颜色 |
-| **CBJ（冲突导向后向跳转）** | 回溯时优先跳转到导致冲突的变量 |
-
 算法会记录每一步操作（着色/回溯），用于可视化展示。
-
-### 与普通回溯对比
-
-| 指标 | 基础回溯 | 优化后 |
-|------|----------|--------|
-| 选择策略 | 固定顺序 | MRV + Degree |
-| 颜色顺序 | 固定 | LCV 动态排序 |
-| 剪枝策略 | 仅 is_safe | + CBJ 冲突导向 |
-| 回溯效率 | 较低 | 明显提升 |
 
 ## 依赖
 
@@ -94,26 +72,4 @@ numpy
 安装依赖：
 ```bash
 pip install geopandas matplotlib numpy
-```
-
-## 模块化设计
-
-求解器与可视化分离，便于复用：
-
-```python
-from four_color_solver import solve_four_color_with_history, PROVINCES, ADJACENCY, COLORS
-from visualize_interactive import InteractiveVisualizer
-
-result, steps = solve_four_color_with_history(PROVINCES, ADJACENCY, COLORS)
-
-viz = InteractiveVisualizer(
-    steps=steps,
-    result=result,
-    provinces=PROVINCES,
-    adjacency=ADJACENCY,
-    colors=COLORS,
-    color_hex={"红": "#E74C3C", "绿": "#27AE60", "蓝": "#3498DB", "黄": "#F1C40F"},
-    color_gray="#D3D3D3"
-)
-viz.show()
 ```
