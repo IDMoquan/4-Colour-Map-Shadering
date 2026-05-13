@@ -190,17 +190,19 @@ def solve_four_color_with_history(province_list, adjacency, colors):
     }
     steps.insert(0, initial_step)
     
-    return result, steps, coloring_order
+    actual_coloring_steps = len([s for s in steps if s["action"] == "assign"])
+    
+    return result, steps, coloring_order, actual_coloring_steps
 
 def main():
     print("=" * 50)
     print("中国省级行政区四色问题求解器")
     print("=" * 50)
 
-    result, steps, coloring_order = solve_four_color_with_history(PROVINCES, ADJACENCY, COLORS)
+    result, steps, coloring_order, actual_coloring_steps = solve_four_color_with_history(PROVINCES, ADJACENCY, COLORS)
 
     if result:
-        print(f"\n求解成功！共进行 {len(steps)} 步计算。")
+        print(f"\n求解成功！共进行 {actual_coloring_steps} 步着色。")
         
         print("\n填色顺序：")
         print("-" * 40)

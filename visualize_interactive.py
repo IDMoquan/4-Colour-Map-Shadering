@@ -279,8 +279,8 @@ class InteractiveVisualizer:
 
 def main():
     print("正在求解四色问题...")
-    result, steps, coloring_order = solve_four_color_with_history(PROVINCES, ADJACENCY, COLORS)
-    print(f"求解完成，共 {len(steps)} 步计算")
+    result, steps, coloring_order, actual_coloring_steps = solve_four_color_with_history(PROVINCES, ADJACENCY, COLORS)
+    print(f"求解完成，共 {actual_coloring_steps} 步着色")
     print(f"填色顺序：{' -> '.join([f'{p}({c})' for p, c in coloring_order])}")
 
     viz = InteractiveVisualizer(
